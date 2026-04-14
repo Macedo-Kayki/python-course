@@ -1,0 +1,14 @@
+Registro de Notas dos Alunos
+----------------------------
+Aluno: kayki
+Nota:10
+----------------------------
+Aluno: rafael
+Nota:10
+----------------------------
+Aluno: carlos
+Nota:9.5
+----------------------------
+Aluno: nicolas
+Nota:7.5
+----------------------------
