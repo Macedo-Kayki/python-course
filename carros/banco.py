@@ -111,22 +111,96 @@ class BancoDeDados:
             except sqlite3.IntegrityError as e:
                 log_error(f"Violação de restrições: {e}")
                 raise
-
     
-    def select(self, select):
+    def atualizar_veiculo(self, veiculo):
+        if self.conn:
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute("UPDATE Veiculo SET marca_id = ?, placa = ?, cor = ? WHERE proprietario_cpf = ?"
+                               (veiculo.marca_id, veiculo.placa, veiculo.cor, veiculo.proprietario_cpf))
+                self.conn.commit()
+            except sqlite3.Error as e:
+                log_error(f"Erro ao dar update no veiculo com o proprietario: {veiculo.proprietario_cpf}")
+                raise
+
+    def apagar_veiculo(self, veiculo):
+        if self.conn:
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute("DELETE FROM Veiculo WHERE placa = ?",
+                               (veiculo.placa,))
+                self.conn.commit()
+            except sqlite3.Error as e:
+                log_error(f"Erro ao apagar veiculo: {e}")
+                raise
+
+    def buscar_pessoas(self):
+        pessoas = []
         if self.conn:
             try:
                 cursor = self.conn.cursor()
                 cursor.execute(
-                    f"""SELECT * FROM {select}"""
+                    "SELECT * FROM Pessoa"
                 )
-                resultado = cursor.fetchall()
-
-                return resultado
+                for row in cursor.fetchall():
+                    cpf, nome, nascimento, oculos = row
+                    pessoas.append(Pessoa(cpf, nome, nascimento, oculos))
             except sqlite3.DatabaseError as e:
-                print(f"Erro no banco de dados: {e}")
+                log_error(f"Erro no banco de dados: {e}")
                 raise
+        return pessoas
+    
+    def buscar_pessoa_cpf(self, cpf):
+        if self.conn:
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute("SELECT * FROM Pessoa WHERE cpf = ?", (cpf,))
+                row = cursor.fetchone()
+                if row:
+                    cpf, nome, nascimento, oculos = row
+                    return Pessoa(cpf, nome, nascimento, oculos)
+            except sqlite3.DataError as e:
+                log_error(f"Dados Incorretos: {e}")
+                raise
+        return None
+    
+    def buscar_marca_id(self, marca):
+        if self.conn:
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute("SELECT * FROM Marca WHERE id = ?", (marca,))
+                row = cursor.fetchone()
+                if row:
+                    id, nome, sigla = row
+                    return Pessoa(id, nome, sigla)
+            except sqlite3.DataError as e:
+                log_error(f"Dados Incorretos: {e}")
+                raise
+        return None
 
+    
+    def buscar_veiculos(self):
+        veiculos = []
+        if self.conn:
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    "SELECT * FROM Veiculo"
+                )
+                for row in cursor.fetchall():
+                    placa, cor, proprietario_cpf, marca_id = row
+                    proprietario = self.buscar_pessoa_cpf(proprietario_cpf)
+                    marca = self.buscar_marca_id(marca_id)
+                    veiculos.append(Veiculo(placa, cor, proprietario, marca))
+            except sqlite3.DatabaseError as e:
+                log_error(f"Erro no banco de dados: {e}")
+                raise
+        return veiculos
+
+    def fechar_conexao(self):
+        if self.conn:
+            self.conn.close()
+            self.conn = None
 
 if __name__ == "__main__":
     bd = BancoDeDados()
@@ -134,5 +208,5 @@ if __name__ == "__main__":
     bd.criar_tabelas()
     bd.criar_marca(1, "Ferrari", "fefa")
     bd.criar_pessoa(152, "Kayki", date(2007, 4, 5), 0)
-    pessoinha = bd.select("Marca")
-    print(pessoinha)
+    busca = bd.buscar_pessoas()
+    print(busca)
